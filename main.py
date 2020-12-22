@@ -1,6 +1,6 @@
 import argparse
 from net import *
-
+tf.compat.v1.disable_eager_execution()
 os.environ['CUDA_VISIBLE_DEVICES'] = GPU_ID
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -113,15 +113,15 @@ class MODEL(Network):
 		# tf.summary.scalar('bce', loss)
 
 		# define session
-		config = tf.ConfigProto(allow_soft_placement=True) 
+		config = tf.compat.v1.ConfigProto(allow_soft_placement=True) 
 		config.gpu_options.allow_growth=True # prevent the program occupies all GPU memory
-		with tf.Session(config=config) as sess:
+		with tf.compat.v1.Session(config=config) as sess:
 			# init all variables in graph
-			sess.run(tf.group(tf.global_variables_initializer(),
-							tf.local_variables_initializer()))
+			sess.run(tf.group(tf.compat.v1.global_variables_initializer(),
+							tf.compat.v1.local_variables_initializer()))
 
 			# saver 
-			saver = tf.train.Saver(max_to_keep=10) 
+			saver = tf.compat.v1.train.Saver(max_to_keep=10) 
 
 			# filewriter for log info
 			# log_dir = self.log_dir+'/run-%02d%02d-%02d%02d' % tuple(time.localtime(time.time()))[1:5]
@@ -175,25 +175,25 @@ class MODEL(Network):
 		if not os.path.exists(close_wall_dir):
 			os.mkdir(close_wall_dir)
 
-		x = tf.placeholder(shape=[1, 512, 512, 3], dtype=tf.float32)
+		x = tf.compat.v1.placeholder(shape=[1, 512, 512, 3], dtype=tf.float32)
 
 		logits1, logits2 = self.forward(x, init_with_pretrain_vgg=False)
 		rooms = self.convert_one_hot_to_image(logits1, act='softmax', dtype='int')
 		close_walls = self.convert_one_hot_to_image(logits2, act='softmax', dtype='int')
 
-		config = tf.ConfigProto(allow_soft_placement=True)
-		sess = tf.Session(config=config)
-		sess.run(tf.group(tf.global_variables_initializer(),
-						tf.local_variables_initializer()))
+		config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+		sess = tf.compat.v1.Session(config=config)
+		sess.run(tf.group(tf.compat.v1.global_variables_initializer(),
+						tf.compat.v1.local_variables_initializer()))
 
-		saver = tf.train.Saver() # restore all parameters
+		saver = tf.compat.v1.train.Saver() # restore all parameters
 		saver.restore(sess, save_path = tf.train.latest_checkpoint(self.log_dir))
 
 		# infer one by one
 		paths = open(self.eval_file, 'r').read().splitlines()
 		paths = [p.split('\t')[0] for p in paths]	
 		for p in paths:
-			im = imread(p, mode='RGB')  
+			im = imread(p, pilmode='RGB')  
 			im_x = imresize(im, (512,512,3)) / 255. # resize and normalize
 			im_x = np.reshape(im_x, (1,512,512,3))
 
@@ -286,7 +286,7 @@ class MODEL(Network):
 		file.close()
 
 def main(args):
-	tf.set_random_seed(seed)
+	tf.random.set_seed(seed)
 	np.random.seed(seed)
 	random.seed(seed)
 

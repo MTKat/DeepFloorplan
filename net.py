@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf # using tf 1.10.1
 
-from tensorflow.contrib.slim.nets import vgg
-
+#from tensorflow.contrib.slim.nets import vgg
+from tensorflow.keras.applications.vgg16 import VGG16 as vgg
 import os
 import sys
 import glob
@@ -10,7 +10,9 @@ import time
 import random
 
 from scipy import ndimage
-from scipy.misc import imread, imresize, imsave
+#from scipy.misc import imread, imresize, imsave
+from skimage.io import imread, imsave
+from skimage.transform import resize as imresize
 
 sys.path.append('./utils/')
 from rgb_ind_convertor import *
@@ -73,7 +75,7 @@ class Network(object):
 
 		# create variable and specific GPU device
 		with tf.device('/device:GPU:'+GPU_ID):
-			w = tf.get_variable(name, shape, dtype=self.dtype,
+			w = tf.compat.v1.get_variable(name, shape, dtype=self.dtype,
 							initializer=tf.random_uniform_initializer(minval=-s, maxval=s),
 							regularizer=regularizer, trainable=trainable)
 
@@ -83,7 +85,7 @@ class Network(object):
 		name = 'b' if name is None else name+'/b'
 
 		with tf.device('/device:GPU:'+GPU_ID):
-			b = tf.get_variable(name, shape, dtype=self.dtype,
+			b = tf.compat.v1.get_variable(name, shape, dtype=self.dtype,
 							initializer=tf.constant_initializer(value=value),
 							regularizer=regularizer, trainable=trainable)
 
@@ -124,8 +126,8 @@ class Network(object):
 
 			# per channel gamma and beta
 			with tf.device('/device:GPU:'+GPU_ID):
-				gamma = tf.get_variable(name+'/gamma', [C], dtype=self.dtype, initializer=tf.constant_initializer(1.0))
-				beta = tf.get_variable(name+'/beta', [C], dtype=self.dtype, initializer=tf.constant_initializer(0.0))
+				gamma = tf.compat.v1.get_variable(name+'/gamma', [C], dtype=self.dtype, initializer=tf.constant_initializer(1.0))
+				beta = tf.compat.v1.get_variable(name+'/beta', [C], dtype=self.dtype, initializer=tf.constant_initializer(0.0))
 				gamma = tf.reshape(gamma, [1, C, 1, 1])
 				beta = tf.reshape(beta, [1, C, 1, 1])
 
@@ -185,7 +187,7 @@ class Network(object):
 
 		with tf.device('/device:GPU:'+GPU_ID):
 			if not diag:
-				k = tf.get_variable(name, shape, dtype=self.dtype,
+				k = tf.compat.v1.get_variable(name, shape, dtype=self.dtype,
 						initializer=tf.constant_initializer(value=value),
 						regularizer=regularizer, trainable=trainable)
 			else:
@@ -194,7 +196,7 @@ class Network(object):
 					w = tf.reshape(w, (shape[0], shape[1], 1))
 					w = tf.image.flip_left_right(w)
 				w = tf.reshape(w, shape)
-				k = tf.get_variable(name, None, dtype=self.dtype, # constant initializer dont specific shape
+				k = tf.compat.v1.get_variable(name, None, dtype=self.dtype, # constant initializer dont specific shape
 						initializer=w,
 						regularizer=regularizer, trainable=trainable)				
 
@@ -271,13 +273,13 @@ class Network(object):
 		# [N, H, W, C] = tensor.shape.as_list()
 
 		out = self._conv2d(tensor, dim=dim, size=1, act='linear', name=name+'/1x1_conv')
-		return tf.image.resize_images(out, shape)
+		return tf.image.resize(out, shape)
 
 
 	def forward(self, inputs, init_with_pretrain_vgg=False, pre_trained_model='./vgg16/vgg_16.ckpt'):
 		# feature extraction part and also the share network 
-		reuse_fnet = len([v for v in tf.global_variables() if v.name.startswith('FNet')]) > 0
-		with tf.variable_scope('FNet', reuse=reuse_fnet):
+		reuse_fnet = len([v for v in tf.compat.v1.global_variables() if v.name.startswith('FNet')]) > 0
+		with tf.compat.v1.variable_scope('FNet', reuse=reuse_fnet):
 			# feature extraction
 			self.conv1_1 = self._conv2d(inputs, dim=64, name='conv1_1') 
 			self.conv1_2 = self._conv2d(self.conv1_1, dim=64, name='conv1_2')		
@@ -309,8 +311,8 @@ class Network(object):
 			# input size for logits predict
 			[n, h, w, c] = inputs.shape.as_list()
 
-		reuse_cw_net = len([v for v in tf.global_variables() if v.name.startswith('CWNet')]) > 0
-		with tf.variable_scope('CWNet', reuse=reuse_cw_net):
+		reuse_cw_net = len([v for v in tf.compat.v1.global_variables() if v.name.startswith('CWNet')]) > 0
+		with tf.compat.v1.variable_scope('CWNet', reuse=reuse_cw_net):
 			# upsample
 			up2 = (self._upconv2d(self.pool5, dim=256, act='linear', name='up2_1') # 32 => /16
 					+ self._conv2d(self.pool4, dim=256, act='linear', name='pool4_s'))
@@ -332,8 +334,8 @@ class Network(object):
 			logits_cw = self._up_bilinear(self.up16_cw, dim=3, shape=(h, w), name='logits')	
 
 		# decode network for room type detection
-		reuse_rnet = len([v for v in tf.global_variables() if v.name.startswith('RNet')]) > 0
-		with tf.variable_scope('RNet', reuse=reuse_rnet):
+		reuse_rnet = len([v for v in tf.compat.v1.global_variables() if v.name.startswith('RNet')]) > 0
+		with tf.compat.v1.variable_scope('RNet', reuse=reuse_rnet):
 			# upsample
 			up2 = (self._upconv2d(self.pool5, dim=256, act='linear', name='up2_1') # 32 => /16
 					+ self._conv2d(self.pool4, dim=256, act='linear', name='pool4_s'))

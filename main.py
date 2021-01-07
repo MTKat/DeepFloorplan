@@ -1,3 +1,5 @@
+import os
+os.chdir('/d2/studies/DeepFloorplan/')
 import argparse
 from net import *
 tf.compat.v1.disable_eager_execution()
@@ -10,7 +12,7 @@ seed = 8964
 # input image path
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--phase', type=str, default='Test',
+parser.add_argument('--phase', type=str, default='Train',
 					help='Train/Test network.')
 
 class MODEL(Network):
@@ -48,7 +50,7 @@ class MODEL(Network):
 		eps = 1e-6
 		z = tf.nn.softmax(x)
 		cliped_z = tf.clip_by_value(z, eps, 1-eps)
-		log_z = tf.log(cliped_z)
+		log_z = tf.compat.v1.log(cliped_z)
 
 		num_classes = y.shape.as_list()[-1]
 		ind = tf.argmax(y, -1, output_type=tf.int32)
@@ -101,7 +103,7 @@ class MODEL(Network):
 		w1, w2 = self.cross_two_tasks_weight(labels_r_hot, labels_cw_hot)
 		loss = (w1*loss1 + w2*loss2)
 
-		optim = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss, colocate_gradients_with_ops=True) # gradient ops assign to same device as forward ops
+		optim = tf.compat.v1.train.AdamOptimizer(learning_rate=1e-4).minimize(loss, colocate_gradients_with_ops=True) # gradient ops assign to same device as forward ops
 
 		# # add image summary
 		# tf.summary.image('input', images)
@@ -132,7 +134,7 @@ class MODEL(Network):
 			coord = tf.train.Coordinator()
 
 			# start queue 
-			threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+			threads = tf.compat.v1.train.start_queue_runners(sess=sess, coord=coord)
 
 			print("Start Training!")
 			total_times = 0			
@@ -231,7 +233,7 @@ class MODEL(Network):
 			print('Saving prediction: {}'.format(name))	
 
 	def evaluate(self, sess, epoch, num_of_classes=11):
-		x = tf.placeholder(shape=[1, 512, 512, 3], dtype=tf.float32)
+		x = tf.compat.v1.placeholder(shape=[1, 512, 512, 3], dtype=tf.float32)
 		logits1, logits2 = self.forward(x, init_with_pretrain_vgg=False)
 		predict_bd = self.convert_one_hot_to_image(logits2, act='softmax', dtype='int')
 		predict_room = self.convert_one_hot_to_image(logits1, act='softmax', dtype='int')
@@ -246,11 +248,11 @@ class MODEL(Network):
 
 		hist = np.zeros((num_of_classes, num_of_classes))
 		for i in range(n):
-			im = imread(image_paths[i], mode='RGB')
+			im = imread(image_paths[i], pilmode='RGB')
 			# for fuse label
-			dd = imread(gt2_paths[i], mode='L')
-			rr = imread(gt3_paths[i], mode='RGB')
-			cw = imread(gt4_paths[i], mode='L')
+			dd = imread(gt2_paths[i], pilmode='L')
+			rr = imread(gt3_paths[i], pilmode='RGB')
+			cw = imread(gt4_paths[i], pilmode='L')
 
 			im = imresize(im, (512, 512, 3)) / 255. # normalize input image
 			im = np.reshape(im, (1,512,512,3))

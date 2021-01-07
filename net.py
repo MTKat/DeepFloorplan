@@ -10,7 +10,6 @@ import time
 import random
 
 from scipy import ndimage
-#from scipy.misc import imread, imresize, imsave
 from skimage.io import imread, imsave
 from skimage.transform import resize as imresize
 

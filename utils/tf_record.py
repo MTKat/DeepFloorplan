@@ -2,7 +2,9 @@ import numpy as np
 
 import tensorflow as tf
 
-from scipy.misc import imread, imresize, imsave
+#from scipy.misc import imread, imresize, imsave
+from skimage.io import imread, imsave
+from skimage.transform import resize as imresize
 from matplotlib import pyplot as plt
 from rgb_ind_convertor import *
 
@@ -14,11 +16,11 @@ import time
 def load_raw_images(path):
 	paths = path.split('\t')
 
-	image = imread(paths[0], mode='RGB')
-	wall  = imread(paths[1], mode='L')
-	close = imread(paths[2], mode='L')
-	room  = imread(paths[3], mode='RGB')
-	close_wall = imread(paths[4], mode='L')
+	image = imread(paths[0], pilmode='RGB')
+	wall  = imread(paths[1], pilmode='L')
+	close = imread(paths[2], pilmode='L')
+	room  = imread(paths[3], pilmode='RGB')
+	close_wall = imread(paths[4], pilmode='L')
 
 	# NOTE: imresize will rescale the image to range [0, 255], also cast data into uint8 or uint32
 	image = imresize(image, (512, 512, 3))
@@ -80,11 +82,11 @@ def write_record(paths, name='dataset.tfrecords'):
 	writer.close()
 
 def read_record(data_path, batch_size=1, size=512):
-	feature = {'image': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'wall': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'close': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'room': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'close_wall': tf.FixedLenFeature(shape=(), dtype=tf.string)}
+	feature = {'image': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'wall': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'close': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'room': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'close_wall': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string)}
 
 	# Create a list of filenames and pass it to a queue
 	filename_queue = tf.train.string_input_producer([data_path], num_epochs=None, shuffle=False, capacity=batch_size*128)
@@ -97,11 +99,11 @@ def read_record(data_path, batch_size=1, size=512):
 	features = tf.parse_single_example(serialized_example, features=feature)
 
 	# Convert the image data from string back to the numbers
-	image = tf.decode_raw(features['image'], tf.uint8)
-	wall = tf.decode_raw(features['wall'], tf.uint8)
-	close = tf.decode_raw(features['close'], tf.uint8)
-	room = tf.decode_raw(features['room'], tf.uint8)
-	close_wall = tf.decode_raw(features['close_wall'], tf.uint8)
+	image = tf.compat.v1.decode_raw(features['image'], tf.uint8)
+	wall = tf.compat.v1.decode_raw(features['wall'], tf.uint8)
+	close = tf.compat.v1.decode_raw(features['close'], tf.uint8)
+	room = tf.compat.v1.decode_raw(features['room'], tf.uint8)
+	close_wall = tf.compat.v1.decode_raw(features['close_wall'], tf.uint8)
 
 	# Cast data
 	image = tf.cast(image, dtype=tf.float32)
@@ -144,10 +146,10 @@ def read_record(data_path, batch_size=1, size=512):
 def load_seg_raw_images(path):
 	paths = path.split('\t')
 
-	image = imread(paths[0], mode='RGB')
-	close = imread(paths[2], mode='L')
-	room  = imread(paths[3], mode='RGB')
-	close_wall = imread(paths[4], mode='L')
+	image = imread(paths[0], pilmode='RGB')
+	close = imread(paths[2], pilmode='L')
+	room  = imread(paths[3], pilmode='RGB')
+	close_wall = imread(paths[4], pilmode='L')
 
 	# NOTE: imresize will rescale the image to range [0, 255], also cast data into uint8 or uint32
 	image = imresize(image, (512, 512, 3))
@@ -199,8 +201,8 @@ def write_seg_record(paths, name='dataset.tfrecords'):
 	writer.close()
 
 def read_seg_record(data_path, batch_size=1, size=512):
-	feature = {'image': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'label': tf.FixedLenFeature(shape=(), dtype=tf.string)}
+	feature = {'image': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'label': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string)}
 
 	# Create a list of filenames and pass it to a queue
 	filename_queue = tf.train.string_input_producer([data_path], num_epochs=None, shuffle=False, capacity=batch_size*128)
@@ -213,8 +215,8 @@ def read_seg_record(data_path, batch_size=1, size=512):
 	features = tf.parse_single_example(serialized_example, features=feature)
 
 	# Convert the image data from string back to the numbers
-	image = tf.decode_raw(features['image'], tf.uint8)
-	label = tf.decode_raw(features['label'], tf.uint8)
+	image = tf.compat.v1.decode_raw(features['image'], tf.uint8)
+	label = tf.compat.v1.decode_raw(features['label'], tf.uint8)
 
 	# Cast data
 	image = tf.cast(image, dtype=tf.float32)
@@ -247,10 +249,10 @@ def read_seg_record(data_path, batch_size=1, size=512):
 def load_bd_rm_images(path):
 	paths = path.split('\t')
 
-	image = imread(paths[0], mode='RGB')
-	close = imread(paths[2], mode='L')
-	room  = imread(paths[3], mode='RGB')
-	close_wall = imread(paths[4], mode='L')
+	image = imread(paths[0], pilmode='RGB')
+	close = imread(paths[2], pilmode='L')
+	room  = imread(paths[3], pilmode='RGB')
+	close_wall = imread(paths[4], pilmode='L')
 
 	# NOTE: imresize will rescale the image to range [0, 255], also cast data into uint8 or uint32
 	image = imresize(image, (512, 512, 3))
@@ -308,26 +310,26 @@ def write_bd_rm_record(paths, name='dataset.tfrecords'):
 	writer.close()
 
 def read_bd_rm_record(data_path, batch_size=1, size=512):
-	feature = {'image': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'boundary': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'room': tf.FixedLenFeature(shape=(), dtype=tf.string),
-				'door': tf.FixedLenFeature(shape=(), dtype=tf.string)}
+	feature = {'image': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'boundary': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'room': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string),
+				'door': tf.compat.v1.FixedLenFeature(shape=(), dtype=tf.string)}
 
 	# Create a list of filenames and pass it to a queue
-	filename_queue = tf.train.string_input_producer([data_path], num_epochs=None, shuffle=False, capacity=batch_size*128)
+	filename_queue = tf.compat.v1.train.string_input_producer([data_path], num_epochs=None, shuffle=False, capacity=batch_size*128)
 	
 	# Define a reader and read the next record
-	reader = tf.TFRecordReader()
+	reader = tf.compat.v1.TFRecordReader()
 	_, serialized_example = reader.read(filename_queue)
 
 	# Decode the record read by the reader
-	features = tf.parse_single_example(serialized_example, features=feature)
+	features = tf.compat.v1.parse_single_example(serialized_example, features=feature)
 
 	# Convert the image data from string back to the numbers
-	image = tf.decode_raw(features['image'], tf.uint8)
-	boundary = tf.decode_raw(features['boundary'], tf.uint8)
-	room = tf.decode_raw(features['room'], tf.uint8)
-	door = tf.decode_raw(features['door'], tf.uint8)
+	image = tf.compat.v1.decode_raw(features['image'], tf.uint8)
+	boundary = tf.compat.v1.decode_raw(features['boundary'], tf.uint8)
+	room = tf.compat.v1.decode_raw(features['room'], tf.uint8)
+	door = tf.compat.v1.decode_raw(features['door'], tf.uint8)
 
 	# Cast data
 	image = tf.cast(image, dtype=tf.float32)
@@ -347,7 +349,7 @@ def read_bd_rm_record(data_path, batch_size=1, size=512):
 	label_room = tf.one_hot(room, 9, axis=-1)
 
 	# Creates batches by randomly shuffling tensors
-	images, label_boundaries, label_rooms, label_doors = tf.train.shuffle_batch([image, label_boundary, label_room, door], 
+	images, label_boundaries, label_rooms, label_doors = tf.compat.v1.train.shuffle_batch([image, label_boundary, label_room, door], 
 						batch_size=batch_size, capacity=batch_size*128, num_threads=1, min_after_dequeue=batch_size*32)	
 
 	# images, walls = tf.train.shuffle_batch([image, wall], 
